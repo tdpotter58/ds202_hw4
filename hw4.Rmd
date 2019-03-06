@@ -1,0 +1,158 @@
+---
+title: "Homework 4"
+author: "Tim Potter"
+date: "March 3, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(datasets)
+library(dplyr)
+library(ggplot2)
+chick <- ChickWeight
+```
+
+# Questions
+
+1)
+
+```{r}
+weight0 <- chick %>%
+  group_by(Diet) %>%
+  summarize(n=n(), avgWeight = mean(weight), sdWeight = sd(weight))
+weight0
+```
+
+
+2)
+
+```{r}
+count <- chick %>%
+  group_by(Chick) %>%
+  mutate(Count = n()) %>%
+  ungroup()
+complete <- count %>%
+  filter(Count==12)
+head(complete, 3)
+```
+
+3)
+
+```{r}
+complete <- complete %>%
+  group_by(Chick) %>%
+  mutate(weightgain = weight - weight[Time == 0]) %>%
+  ungroup()
+head(complete, 3)
+```
+
+4)
+Going by the graph, the chicks on diet 3 gained the most weight by day 21, while the chicks on diet 1 gained the least. The chicks on diet 2 had the largest spread of weights, and the chicks on diet 4 had the tightest spread.
+```{r}
+complete$Diet <- factor(complete$Diet, c(1, 2, 4, 3))
+
+complete %>%
+  filter(Time == 21) %>%
+  ggplot(aes(x = Diet, y = weightgain)) + geom_boxplot() + ylim(0, NA)
+
+```
+
+5)
+Chick 35 gained the most weight. It was on diet 3. 
+Chick 24 gained the least weight. It was on diet 2.
+```{r}
+fin <- complete %>%
+  filter(Time == 21) %>%
+  arrange(desc(weightgain))
+fin
+complete %>%
+  filter(Time == 21) %>%
+  arrange(weightgain)
+fin %>%
+  ggplot(aes(x = Chick, y = weightgain, fill = Diet)) + geom_col()
+```
+
+6)
+```{r}
+complete %>%
+  filter(Time == 0) %>%
+  arrange(weight)
+
+complete %>%
+  filter(Time == 0) %>%
+  arrange(desc(weight))
+```
+Chicks 27, 28, 29, 33, 36, and 48 had the lowest starting weight.
+Chicks 3, 11, 19, and 23 had the heighest starting weight.
+```{r}
+complete <- complete %>%
+  group_by(Time) %>%
+  mutate(avgWeight = sum(weight) / n()) %>%
+  ungroup()
+complete
+complete %>%
+  filter(Chick %in% c(27,28,29,33,36,48,3,11,19,23)) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line() + geom_smooth(aes(x = Time, y = avgWeight), show.legend = TRUE)
+```
+
+Chicks with the lowest starting weight
+```{r}
+complete %>%
+  filter(Chick %in% c(27,28,29,33,36,48)) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line() + geom_smooth(aes(x = Time, y = avgWeight), show.legend = TRUE)
+```
+
+Chicks with the heighest starting weight
+```{r}
+complete %>%
+  filter(Chick %in% c(3,11,19,23)) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line() + geom_smooth(aes(x = Time, y = avgWeight), show.legend = TRUE)
+```
+
+Note how all the chicks with the heighest starting weight finished below the average weightgain of all the chicks, while several of the lightest chicks ended with a weight greater than the average.
+
+7)
+```{r}
+complete %>%
+  filter(Diet == 1) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line()
+complete %>%
+  filter(Diet == 2) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line()
+complete %>%
+  filter(Diet == 3) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line()
+complete %>%
+  filter(Diet == 4) %>%
+  ggplot(aes(x = Time, y = weight, color = Chick)) + geom_line()
+complete %>%
+  filter(Time == 21) %>%
+  ggplot(aes(x = weight, fill = Diet)) + geom_histogram(binwidth = 20)
+complete %>%
+  filter(Time == 21) %>%
+  ggplot(aes(x = weightgain, fill = Diet)) + geom_histogram(binwidth = 20)
+```
+
+These plots don't really give us any more information than what we already had.
+
+```{r}
+complete <- complete %>%
+  mutate(percentOffAverage = ((weight - avgWeight) / avgWeight) * 100)
+complete
+
+complete %>%
+  filter(Diet == 1) %>%
+  ggplot(aes(x = Time, y = percentOffAverage, color = Chick)) + geom_line() + ylim(-100,100)
+complete %>%
+  filter(Diet == 2) %>%
+  ggplot(aes(x = Time, y = percentOffAverage, color = Chick)) + geom_line() + ylim(-100,100)
+complete %>%
+  filter(Diet == 3) %>%
+  ggplot(aes(x = Time, y = percentOffAverage, color = Chick)) + geom_line() + ylim(-100,100)
+complete %>%
+  filter(Diet == 4) %>%
+  ggplot(aes(x = Time, y = percentOffAverage, color = Chick)) + geom_line() + ylim(-100,100)
+```
+
+These plots show the percentage a chick differed from the average weight on a given day, grouped by the diet of the chick. From these we can see that the chicks on diet 1 were pretty consistently below the average, 3 and 4 were consistently above the average, and diet 2 was pretty much even across the board. Of course there could be several other variables that we're not taking into account here, *but*, from the data we have examined, it would be safe to say that diets 3 and 4 are the best for gaining weight.
